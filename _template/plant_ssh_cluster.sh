@@ -1,4 +1,5 @@
 set -e
+
 connect=$1
 
 if [[ $connect == *@* ]] ; then
@@ -43,37 +44,49 @@ ips=$(echo ${BASH_REMATCH[1]})
 IFS=',' read -ra node_host <<< "$cluster_nodes"
 IFS=',' read -ra node_ip <<< "$ips"
 
-echo Trying to match node addresses to hostnames from known_hosts...
-echo $ips
-
 mkdir $cluster_name || (echo "Error creating directory {$cluster_name}: $?";  exit 1) >&2
 
 i=0
 : > "$cluster_name/nodes.lst"
 
-# try to match ip and hostname in cluster
-for ipport in "${node_ip[@]}"; do
+iteration_list="$@"
+
+# we do not try to read cluster config if more than one argument is provided
+if [ "$#" -le 1 ]; then
+    echo Trying to match node addresses to hostnames from known_hosts...
+    echo $ips
+    iteration_list="${node_ip[@]}"
+fi
+
+# try to match ip and hostname in cluster if only one node is configured
+for ipport in $iteration_list; do
     port=${ipport#*:}
+    [ "$port" != "$ipport" ] || port=""
     ip=${ipport%:*}
-    for node in ${node_host[@]}; do
-        match=$(grep -o "$node.*,$ip" ~/.ssh/known_hosts | head -n 1) || :
-        if [ ! -z "$match" ] ; then
-            break
-        fi
-    done
-    [ ! -z "$match" ] || for node in ${node_host[@]}; do
-        match=$(grep -o "${node%%.*}.*,$ip" ~/.ssh/known_hosts | head -n 1) || :
-        if [ ! -z "$match" ] ; then
-            break
-        fi
-    done
-    if [ ! -z "$match" ]; then
-        match=${match%,*}
-        echo "Mapped $ip to $match"
-        node=$match
+
+    if [ "$#" -gt 1 ] ; then
+        node=$ipport
     else
-        node=${ipport#:3306}
-        echo "Can't identify hostname for {$ipport} from wsrep_cluster_address, will use ip address instead {$node}"
+        for node in ${node_host[@]}; do
+            match=$(grep -o "$node.*,$ip" ~/.ssh/known_hosts | head -n 1) || :
+            if [ ! -z "$match" ] ; then
+                break
+            fi
+        done
+        [ ! -z "$match" ] || for node in ${node_host[@]}; do
+            match=$(grep -o "${node%%.*}.*,$ip" ~/.ssh/known_hosts | head -n 1) || :
+            if [ ! -z "$match" ] ; then
+                break
+            fi
+        done
+        if [ ! -z "$match" ]; then
+            match=${match%,*}
+            echo "Mapped $ip to $match"
+            node=$match
+        else
+            node=${ipport%:3306}
+            echo "Can't identify hostname for {$ipport} from wsrep_cluster_address, will use ip address instead {$node}"
+        fi
     fi
 
     echo $node >> "$cluster_name/nodes.lst"
