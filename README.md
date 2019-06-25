@@ -1,2 +1,40 @@
 # galera-tools
-Execute commands on all cluster nodes
+Execute commands on all cluster nodes (currently only access over ssh is implemented, more ways may follow).
+### Synopsys
+At the moment the tool assumes you can access cluster nodes using ssh.
+Clone repository and initialize scripts to access cluster
+```
+git clone https://github.com/andrii-suse/galera-tools
+cd galera-tools
+_template/plant_ssh_cluster.sh root@node1
+```
+Output like following is expected, where `mycluster` is read from Galera variable `wsrep_cluster_name` `mynode1`,`mynode2`,`mynode3` and `mynode4` are read from `~/.ssh/known_hosts`:
+```
+Examining cluster config...
+Name: mycluster
+Trying to match node addresses to hostnames from known_hosts...
+10.10.0.2:3306,10.10.0.3:3306,10.10.0.4:3306,10.10.0.5:3306
+Mapped 10.10.0.2 to mynode1
+Mapped 10.10.0.3 to mynode2
+Mapped 10.10.0.4 to mynode3
+Mapped 10.10.0.5 to mynode4
+success
+```
+On success directory `mycluster` has been created, which provides set of scripts to be executed on cluster, e.g.:
+```
+> mycluster/service_status.sh 
+mynode1 :active
+mynode2 :active
+mynode3 :active
+mynode4 :active
+> mycluster/cluster_size.sh 
+mynode1 :wsrep_cluster_size 4
+mynode2 :wsrep_cluster_size 4
+mynode3 :wsrep_cluster_size 4
+mynode4 :wsrep_cluster_size 4
+> mycluster/sql.sh 'show variables like "innodb_buffer_pool_size"'
+mynode1 :innodb_buffer_pool_size 12884901888
+mynode2 :innodb_buffer_pool_size 127926272
+mynode3 :innodb_buffer_pool_size 127926272
+mynode4 :innodb_buffer_pool_size 127926272
+```
