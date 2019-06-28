@@ -1,4 +1,5 @@
 set -e
+set -o pipefail
 
 RANGES_COUNT=${RANGES_COUNT:-32}
 RANGES_MAX_ROWS_PER_RANGE=${RANGES_MAX_ROWS_PER_RANGE:-10000}
@@ -22,6 +23,29 @@ min=$1
 max=$2
 { [ ! -z "$minmax" ] && [ "$max" -gt "$min" ]; } || ( echo "Cannot identify values range for table $ftable (from {$minmax} and {$min} {$max})"; exit 1 ) >&2
 
+columns=$($cluster/0/sql.sh '
+select group_concat(
+  concat(
+    if(is_nullable="YES",
+        concat(
+          "ifnull(",
+            if(data_type like "%text" or data_type like "%lob",
+              concat("crc32(",column_name,")"),
+              column_name
+            ),
+          ",",char(34),column_name,"NULL",char(34),
+          ")"
+        ),
+        if(data_type like "%text" or data_type like "%lob",
+          concat("crc32(",column_name,")"),
+          column_name
+        )
+    )
+  )
+) as c
+from COLUMNS where table_name="'$table'" and table_schema="'$schema'"')
+
+[ "${#columns}" -gt 6 ] || ( echo "Cannot construct expression for calculating row checksums"; exit 1 ) >&2
 
 mkdir -p $cluster/ranges
 mkdir $cluster/ranges/$ftable || ( echo "Cannot create folder {$cluster/ranges/$ftable}"; exit 1 ) >&2
@@ -55,8 +79,8 @@ ranges() {
         l=$h
     done
     if [ $flat == 1 ]; then
-        for f in _template/ranges/*.sh; do
-            m4 -D__table="$table" -D__schema="$schema" -D__pk="$pk" -D__clusterdir="$(pwd)/$cluster" -D__ranges="$ranges" $f | bash -e > "$dir/$(basename $f)"
+        for f in _template/ranges/* ; do
+            m4 -D__table="$table" -D__schema="$schema" -D__pk="$pk" -D__clusterdir="$(pwd)/$cluster" -D__ranges="$ranges" -D__columns="${columns@Q}" $f | bash -e > "$dir/$(basename $f)"
             chmod +x "$dir/$(basename $f)"
         done
     fi
