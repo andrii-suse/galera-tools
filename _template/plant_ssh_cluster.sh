@@ -110,4 +110,4 @@ for filename in _template/ssh/node/* ; do
   chmod +x $cluster_name/$(basename $filename)
 done
 
-echo success
+echo $(basename $0): success
