@@ -6,8 +6,8 @@ Split table into logical partitions (Range) and then compare data between nodes 
 At the moment the tool assumes you can access cluster nodes using ssh.
 Clone repository and initialize scripts to access cluster
 ```
-git clone https://github.com/andrii-suse/galera-tools
-cd galera-tools
+git clone https://github.com/andrii-suse/mariadb-cluster-tools
+cd mariadb-cluster-tools
 _template/plant_ssh_cluster.sh root@node1
 ```
 Output like below is expected, where:
