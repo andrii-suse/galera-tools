@@ -1,8 +1,8 @@
 set -e
 set -o pipefail
 
-RANGES_COUNT=${RANGES_COUNT:-32}
-RANGES_MAX_ROWS_PER_RANGE=${RANGES_MAX_ROWS_PER_RANGE:-10000}
+RANGES_COUNT=${RANGES_COUNT:-8}
+RANGES_MAX_ROWS_PER_RANGE=${RANGES_MAX_ROWS_PER_RANGE:-100000}
 
 cluster=$1
 table=$2
@@ -45,7 +45,7 @@ select group_concat(
 ) as c
 from COLUMNS where table_name="'$table'" and table_schema="'$schema'"')
 
-[ "${#columns}" -gt 6 ] || ( echo "Cannot construct expression for calculating row checksums"; exit 1 ) >&2
+[ ! -z "$columns" ] && [ "$columns" != NULL ] || ( echo "Cannot construct expression for calculating row checksums"; exit 1 ) >&2
 
 mkdir -p $cluster/ranges
 mkdir $cluster/ranges/$ftable || ( echo "Cannot create folder {$cluster/ranges/$ftable}"; exit 1 ) >&2
@@ -66,7 +66,7 @@ ranges() {
     local ranges=$l
     local flat=1
     [ $expected_rows -le $RANGES_MAX_ROWS_PER_RANGE ] || flat=0
-    for (( i=1; i<RANGES_COUNT; i++ )); do
+    for (( i=0; i<RANGES_COUNT; i++ )); do
         local h=$((l+step))
         [ $i != $((RANGES_COUNT-1)) ] || h=$high
         if [ $flat == 1 ]; then

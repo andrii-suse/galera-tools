@@ -2,6 +2,7 @@
 ssh -tq __host mysql __connect -BN -e "'$@'" information_schema > __workdir/last_sql.out
 res=$?
 if [[ $res -ne 0 ]]; then
+    cat __workdir/last_sql.out
     ( exit $res )
 else
     mv __workdir/last_sql.out __workdir/last_sql_success.out

@@ -28,7 +28,7 @@ diffranges() {
     local lastrun=$3
 
     if [ ! -f "$srcdir/count.sh" ]; then
-        for D in $(find "$dir" -maxdepth 1 -type d -name "range*" | sort); do
+        for D in $(find "$dir" -maxdepth 1 -mindepth 1 -type d -name "range*" | sort); do
             [ -d "$srcdir/$(basename $D)" ] || ( echo "Cannot find folder {$srcdir/$(basename $D)} nor file {$srcdir/count.sh}"; exit 1 ) >&2
             diffranges "$srcdir/$(basename $D)" "$D" $lastrun
         done
@@ -36,7 +36,7 @@ diffranges() {
         uniq=$($srcdir/count.sh | tee $dir/.out | sed 's/.*://' | sort | uniq | wc -l)
         if [ "$uniq" != 1 ]; then
             : $((mismatches++))
-            echo "? $dir"
+            [ $last_run == 1 ] || echo "? $dir"
             if [ $lastrun == 1 ]; then
                 $srcdir/pk.sh > /dev/null
                 local nodecnt=0
@@ -56,7 +56,7 @@ diffranges() {
         uniq=$($srcdir/crc32.sh | tee $dir/.out | sed 's/.*://' | sort | uniq | wc -l)
         if [ "$uniq" != 1 ]; then
             : $((mismatches++))
-            echo " ?$dir"
+            [ $last_run == 1 ] || echo " ?$dir"
             if [ $lastrun == 1 ]; then
                 $srcdir/row.sh > /dev/null
                 local nodecnt=0
@@ -64,12 +64,13 @@ diffranges() {
                     cp $cluster/$node/last_sql_success.out $dir/row$node
                     let nodecnt=nodecnt+1
                 done
-                pks=$(sort $dir/row* | uniq -c | grep -v "\b$nodecnt " | sed 's/\r$//g' | awk '{printf("%s,",$2)}' | sed 's/,\s*$//' )
+                pks=$(sort $dir/row* | uniq -c | grep -v "\b$nodecnt " | sed 's/\r$//g' | awk '{print $2}' | uniq )
                 [ ${#pks} -lt 1000 ] || ( echo "Too many differences detected"; exit 1 ) >&2
                 sql="$(cat $srcdir/row.sql)"
-                sql=${sql/INCONDITION/$pks}
-                echo $cluster/sql.sh "'$sql'"
-                # rm $dir/row*
+                for pk in ${pks} ; do
+                    echo $cluster/sql.sh "'$sql=$pk'"
+                done
+                rm $dir/row*
             fi
             return
         fi
@@ -79,7 +80,7 @@ diffranges() {
     fi
 }
 
-iterations=1
+iterations=${RANGES_DIFF_ITERATIONS:-3}
 while [  $iterations -gt 0 ]; do
     last_run=0
     [ $iterations -ne 1 ] || last_run=1
