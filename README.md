@@ -1,6 +1,7 @@
-# galera-tools
+# mariadb-cluster-tools
 Execute commands on all cluster nodes (currently only access over ssh is implemented, more ways may follow).
-### Synopsis 
+Split table into logical partitions (Range) and then compare data between nodes in each Range.
+### Synopsis
 #### Automatically detect cluster nodes
 At the moment the tool assumes you can access cluster nodes using ssh.
 Clone repository and initialize scripts to access cluster
@@ -55,12 +56,12 @@ success
 Then again - a folder for the cluster will be created with scripts usable as in example above.
 
 ### Ranges
-Ranges is a approach which can be used to help verifying table's differences across nodes or in other operations, e.g. put read load on cluster.
+Ranges can be used to help verifying table's differences across nodes or in other operations, e.g. put a load on nodes.
 The table is split into logical partitions according to InnoDB statistics. Each partition may be split once again until partition's range is small enough.
 Following environment variables may be used to control the process (with default values):
 ```
 RANGES_COUNT=8
-RANGES_MAX_ROWS_PER_RANGE=10000
+RANGES_MAX_ROWS_PER_RANGE=100000
 ```
 Logical partitions are folders inside cluster directory, which was previously created e.g. with `_template/plant_ssh_cluster.sh`. (But the approach may be used in other environments like any replication topology or local cluster).
 This is example output for creating table and its logical partitions in ssh cluster.
@@ -109,7 +110,7 @@ mynode2 :1954 1954 1954 1954 1954 1954 1954 1954 15625
 mynode3 :1954 1954 1954 1954 1954 1954 1954 1954 15625
 mynode4 :1954 1954 1954 1954 1954 1954 1954 1954 15625
 ```
-Last output shows that each leaf partition has 15625 rows (which are equally spit into sub-partitions 1956 rows each).
+Last output shows that each leaf partition has 15625 rows (which are equally spit into sub-partitions 1954 rows each).
 ```
 $> mycluster1/ranges/test.x/range05.624996_749995/range01.640620_656244/crc32.sh 
 mynode1 :6211E324
