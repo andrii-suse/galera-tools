@@ -83,7 +83,7 @@ $> mycluster1/0/sql.sh 'alter table test.x add primary key(c1)'
 $> _template/plant_ranges.sh mycluster1 test.x
 Examining config of cluster {mycluster1}...
 plant_ranges.sh: success
-$> ll mycluster1/ranges/test.x/range05.624996_749995/
+$> ll mycluster1/ranges/test.x/
 drwxr-xr-x 10 a users 4096 Jun 29 10:26 range00.00001_125000
 drwxr-xr-x 10 a users 4096 Jun 29 10:26 range01.125000_249999
 drwxr-xr-x 10 a users 4096 Jun 29 10:26 range02.249999_374998
