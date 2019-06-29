@@ -137,7 +137,7 @@ mynode4 :52236369
 ```
 
 ### Ranges Diff
-`_template/ranges_diff.sh` is script which makes best effort to find differences across specified nodes. (So far only ssh cluster is implemented, more topologies may come).
+`_template/diff_ranges.sh` is a script which makes the best effort to find differences across specified nodes. (So far only ssh cluster is implemented, more topologies may come).
 It is based on Ranges functionality discussed earlier.
 
 #### Ranges Diff Example
@@ -163,7 +163,7 @@ $> mycluster1/0/sql.sh 'set WSREP_ON=0; update test.x set c4=NULL where rand()<0
 $> mycluster1/1/sql.sh 'set WSREP_ON=0; update test.x set c3=uuid() where c1>100000 and rand()<0.00001 limit 1'
 $> mycluster1/3/sql.sh 'set WSREP_ON=0; update test.x set c2=1001 where rand()<0.00001 limit 1'
 ```
-Run diff_ranges.sh script. `==` in output will mean that partition looks in sync. `? ` means row count is not the same across nodes for corresponding range, so checksum wasn't calculated. ` ?` means that row count is correct for the range, but checksum is different. 3 iterations are performed and then helper SQL is printed to identify problem rows:
+Run diff_ranges.sh script. `==` in output means that partition looks in sync. `? ` means row count is not the same across nodes for corresponding range, so checksum wasn't calculated. ` ?` means that row count is correct for the range, but checksum is different. 3 iterations are performed and then helper SQL is printed to identify problem rows:
 ```
 $> _template/diff_ranges.sh mycluster1 test.x
  ?mycluster1/rangesdiff/test.x/range00.00001_125000/range00.00001_15625
